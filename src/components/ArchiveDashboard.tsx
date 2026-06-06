@@ -7,6 +7,15 @@ import { SchoolDeclaration, getImageUrl } from '@/data/schools';
 import { supabase } from '@/lib/supabaseClient';
 import styles from './ArchiveDashboard.module.css';
 
+function generateUniqueId(): string {
+  return `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function generateFileName(originalName: string): string {
+  const fileExt = originalName.split('.').pop();
+  return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+}
+
 interface Props {
   initialDeclarations: SchoolDeclaration[];
 }
@@ -20,6 +29,10 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [declarations, setDeclarations] = useState<SchoolDeclaration[]>(initialDeclarations);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,36 +95,104 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newId = `id_${Date.now()}`;
-    const { error } = await supabase
-      .from('declarations')
-      .insert([
-        {
-          id: newId,
-          name: submitForm.name,
-          campus: submitForm.campus,
-          organization: submitForm.organization,
-          date: submitForm.date || new Date().toISOString().split('T')[0],
-          region: '전체',
-          category: '기타',
-          summary: '관리자 검수 전 제보입니다.', 
-          status: 'pending'
-        }
-      ]);
-      
-    if (error) {
-      alert('제보 중 오류가 발생했습니다. 다시 시도해주세요.');
-      console.error(error);
-    } else {
+
+    if (!selectedFile) {
+      alert('성명서 이미지를 첨부해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    let uploadedImageUrl = '';
+
+    try {
+      // 1. Supabase Storage에 파일 업로드
+      const fileName = generateFileName(selectedFile.name);
+      const filePath = `raw/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('declarations')
+        .upload(filePath, selectedFile);
+
+      if (uploadError) {
+        throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
+      }
+
+      // 2. 업로드된 파일의 Public URL 가져오기
+      const { data: { publicUrl } } = supabase.storage
+        .from('declarations')
+        .getPublicUrl(filePath);
+
+      uploadedImageUrl = publicUrl;
+
+      // 3. Database에 제보 정보 저장 (상태: pending)
+      const newId = generateUniqueId();
+      const { error: dbError } = await supabase
+        .from('declarations')
+        .insert([
+          {
+            id: newId,
+            name: submitForm.name,
+            campus: submitForm.campus,
+            organization: submitForm.organization,
+            date: submitForm.date || new Date().toISOString().split('T')[0],
+            region: '전체',
+            category: '기타',
+            summary: '관리자 검수 전 제보입니다.', 
+            status: 'pending',
+            fallbackUrl: uploadedImageUrl
+          }
+        ]);
+
+      if (dbError) {
+        throw new Error(`데이터베이스 저장 실패: ${dbError.message}`);
+      }
+
       alert('제보가 완료되었습니다. 관리자 검토 후 반영됩니다!');
-      setIsModalOpen(false);
+      handleCloseModal();
       setSubmitForm({ name: '', campus: '', organization: '', date: '' });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '제보 중 오류가 발생했습니다. 다시 시도해주세요.';
+      alert(errorMessage);
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setSubmitForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 용량은 최대 5MB까지 업로드 가능합니다.');
+      return;
+    }
+
+    setSelectedFile(file);
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreviewUrl(previewUrl);
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+      setImagePreviewUrl(null);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedFile(null);
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+      setImagePreviewUrl(null);
+    }
   };
 
   const handleCardClick = (id: string) => {
@@ -526,11 +607,11 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
 
       {/* 제보하기 모달 */}
       {isModalOpen && (
-        <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+        <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) handleCloseModal(); }}>
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
               <h3>제보하기</h3>
-              <button className={styles.modalCloseBtn} onClick={() => setIsModalOpen(false)}>
+              <button className={styles.modalCloseBtn} onClick={handleCloseModal}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -542,15 +623,35 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
               <div className={styles.formGroup}>
                 <label>성명서 이미지 <span>*</span></label>
                 <div className={styles.fileInputWrapper}>
-                  <div className={styles.fileInputBtn}>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                      <polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
-                    <span>이미지 업로드 (준비중, 텍스트 먼저 제보 가능)</span>
-                  </div>
-                  {/* <input type="file" className={styles.fileInput} accept="image/*" /> */}
+                  {imagePreviewUrl ? (
+                    <div className={styles.imagePreviewContainer}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={imagePreviewUrl} alt="선언서 미리보기" className={styles.imagePreview} />
+                      <button type="button" className={styles.removeImageBtn} onClick={handleRemoveFile} title="이미지 삭제">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={styles.fileInputBtn}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                      <span>이미지 업로드 (최대 5MB)</span>
+                      <input 
+                        type="file" 
+                        name="image" 
+                        className={styles.fileInput} 
+                        accept="image/*" 
+                        required 
+                        onChange={handleFileChange} 
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
               
@@ -574,7 +675,9 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
                 <input type="date" name="date" className={styles.formInput} value={submitForm.date} onChange={handleInputChange} />
               </div>
               
-              <button type="submit" className={styles.submitBtn}>제보하기</button>
+              <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                {isSubmitting ? '업로드 및 제보 중...' : '제보하기'}
+              </button>
             </form>
           </div>
         </div>
