@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import gsap from 'gsap';
 import { SchoolDeclaration, getImageUrl } from '@/data/schools';
@@ -52,27 +52,33 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
     fetchDeclarations();
   }, []);
 
-  // 검색 및 필터링
-  const uniqueUniversitiesCount = new Set(declarations.map(d => d.name)).size;
+  // 검색 및 필터링 & 정렬 최적화 (useMemo 사용)
+  const uniqueUniversitiesCount = useMemo(() => {
+    return new Set(declarations.map(d => d.name)).size;
+  }, [declarations]);
+
   const totalDeclarationsCount = declarations.length;
 
-  let filteredDeclarations = declarations.filter((dec) => {
-    const matchSearch = dec.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        (dec.organization && dec.organization.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchRegion = regionFilter === '전체' || dec.region === regionFilter;
-    const matchCategory = categoryFilter === '전체' || dec.category === categoryFilter;
-    
-    return matchSearch && matchRegion && matchCategory;
-  });
+  const filteredDeclarations = useMemo(() => {
+    const filtered = declarations.filter((dec) => {
+      const matchSearch = dec.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (dec.organization && dec.organization.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchRegion = regionFilter === '전체' || dec.region === regionFilter;
+      const matchCategory = categoryFilter === '전체' || dec.category === categoryFilter;
+      
+      return matchSearch && matchRegion && matchCategory;
+    });
 
-  // 정렬 로직
-  if (sortOrder === '오래된 순') {
-    filteredDeclarations = filteredDeclarations.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  } else {
-    filteredDeclarations = filteredDeclarations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }
+    if (sortOrder === '오래된 순') {
+      return [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    } else {
+      return [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+  }, [declarations, searchTerm, regionFilter, categoryFilter, sortOrder]);
 
-  const selectedSchool = declarations.find((dec) => dec.id === selectedId);
+  const selectedSchool = useMemo(() => {
+    return declarations.find((dec) => dec.id === selectedId);
+  }, [declarations, selectedId]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,11 +109,13 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSubmitForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleCardClick = (id: string) => {
     setSelectedId(id);
-    setTimeout(() => {
-      detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
   };
 
   const goToNextDeclaration = () => {
@@ -115,9 +123,6 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
     const currentIndex = filteredDeclarations.findIndex(dec => dec.id === selectedId);
     if (currentIndex !== -1 && currentIndex < filteredDeclarations.length - 1) {
       setSelectedId(filteredDeclarations[currentIndex + 1].id);
-      setTimeout(() => {
-        detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
     }
   };
 
@@ -126,15 +131,22 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // 선택한 성명서 변경 시 자동 스크롤 이동 (Declarative Effect)
+  useEffect(() => {
+    if (selectedId && detailRef.current) {
+      detailRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedId]);
+
   // 모바일에서 높이 버그 방지를 위한 동적 뷰포트 처리 및 모바일 리스트 강제 적용
   useEffect(() => {
     const setVh = () => {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
       
-      // 모바일에서는 강제로 list 뷰 적용
+      // 모바일에서는 강제로 list 뷰 적용 (불필요한 리렌더링 방지)
       if (window.innerWidth <= 992) {
-        setViewMode('list');
+        setViewMode((prev) => prev !== 'list' ? 'list' : prev);
       }
     };
     
@@ -429,11 +441,15 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
               </div>
             </div>
           ))}
-          {filteredDeclarations.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-secondary)', padding: '80px 0', fontSize: '13px', backgroundColor: 'var(--bg-color)', zIndex: 3 }}>
+          {isLoading ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-secondary)', padding: '80px 0', fontSize: '14px', zIndex: 3 }}>
+              데이터를 불러오는 중입니다...
+            </div>
+          ) : filteredDeclarations.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-secondary)', padding: '80px 0', fontSize: '13px', zIndex: 3 }}>
               검색 결과가 없습니다.
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -540,22 +556,22 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
               
               <div className={styles.formGroup}>
                 <label>학교 이름 <span>*</span></label>
-                <input type="text" className={styles.formInput} placeholder="예: 동국대학교" required value={submitForm.name} onChange={(e) => setSubmitForm({...submitForm, name: e.target.value})} />
+                <input type="text" name="name" className={styles.formInput} placeholder="예: 동국대학교" required value={submitForm.name} onChange={handleInputChange} />
               </div>
               
               <div className={styles.formGroup}>
                 <label>캠퍼스</label>
-                <input type="text" className={styles.formInput} placeholder="예: 서울캠퍼스" value={submitForm.campus} onChange={(e) => setSubmitForm({...submitForm, campus: e.target.value})} />
+                <input type="text" name="campus" className={styles.formInput} placeholder="예: 서울캠퍼스" value={submitForm.campus} onChange={handleInputChange} />
               </div>
               
               <div className={styles.formGroup}>
                 <label>조직명 <span>*</span></label>
-                <input type="text" className={styles.formInput} placeholder="예: 제56대 총학생회" required value={submitForm.organization} onChange={(e) => setSubmitForm({...submitForm, organization: e.target.value})} />
+                <input type="text" name="organization" className={styles.formInput} placeholder="예: 제56대 총학생회" required value={submitForm.organization} onChange={handleInputChange} />
               </div>
               
               <div className={styles.formGroup}>
                 <label>선언 일자</label>
-                <input type="date" className={styles.formInput} value={submitForm.date} onChange={(e) => setSubmitForm({...submitForm, date: e.target.value})} />
+                <input type="date" name="date" className={styles.formInput} value={submitForm.date} onChange={handleInputChange} />
               </div>
               
               <button type="submit" className={styles.submitBtn}>제보하기</button>

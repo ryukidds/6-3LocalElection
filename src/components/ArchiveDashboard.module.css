@@ -652,18 +652,7 @@
   gap: 20px;
 }
 
-.emailTextLink {
-  font-family: var(--font-display);
-  font-size: 13px;
-  color: var(--text-primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
 
-.emailTextLink:hover {
-  color: var(--accent-hover);
-}
 
 .socialLink {
   color: var(--text-secondary);
@@ -994,11 +983,7 @@
     aspect-ratio: 1 / 1;
   }
   
-  .schoolName {
-    font-size: 20px; /* 모바일에서도 가독성 있게 큼직하게 유지 */
-    letter-spacing: -0.5px;
-  }
-  
+
   .schoolDate {
     font-size: 10px;
     padding: 4px 10px;
@@ -1015,9 +1000,7 @@
     min-height: 72px;
   }
   
-  .listCard .schoolName {
-    font-size: 16px;
-  }
+
 
   /* 모바일 상세 뷰 스플릿 레이아웃 대응 */
   .detailContentWrapper {
