@@ -1,0 +1,92 @@
+@font-face {
+    font-family: '87mmDailyRegular';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201@1.0/87MMILSANG-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+:root {
+  --bg-color: #000000;
+  --bg-sidebar: rgba(10, 10, 10, 0.7);
+  --text-primary: #ffffff;
+  --text-secondary: #8e8e93;
+  --text-muted: #3a3a3c;
+  --accent-color: #ffffff;
+  --accent-hover: #ff0000; /* Pure Red */
+  --border-color: rgba(255, 255, 255, 0.12);
+  --font-sans: '87mmDailyRegular', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: '87mmDailyRegular', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.2px;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+/* 커스텀 마우스 커서 스타일 (데스크톱 전용) */
+@media (hover: hover) and (pointer: fine) {
+  body, a, button, [role="button"], li {
+    cursor: none !important;
+  }
+}
+
+/* 스크롤바 디자인 */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* 텍스트 드래그 선택 색상 */
+::selection {
+  background-color: var(--accent-hover);
+  color: #000000;
+}
+
+/* 커스텀 마우스 커서 스타일 */
+.custom-cursor {
+  width: 38px;
+  height: 38px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 99999;
+  background-image: url('/images/cursor-stamp.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  will-change: transform;
+}
+
