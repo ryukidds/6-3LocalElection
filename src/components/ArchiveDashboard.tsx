@@ -58,7 +58,13 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
       if (error) {
         console.error('Error fetching declarations:', error);
       } else {
-        setDeclarations(data || []);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedData = (data || []).map((item: any) => ({
+          ...item,
+          driveFileId: item.drive_file_id,
+          fallbackUrl: item.fallback_url,
+        }));
+        setDeclarations(mappedData);
       }
       setIsLoading(false);
     };
@@ -139,7 +145,7 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
             category: '기타',
             summary: '관리자 검수 전 제보입니다.', 
             status: 'pending',
-            fallbackUrl: uploadedImageUrl
+            fallback_url: uploadedImageUrl
           }
         ]);
 
