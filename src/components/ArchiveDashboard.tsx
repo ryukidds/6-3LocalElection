@@ -402,8 +402,10 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
               <div className={styles.detailTextContainer}>
                 <div className={styles.detailHeader}>
                   <div className={styles.detailTitleInfo}>
-                    <h2 className={styles.detailSchoolName}>{selectedSchool.name} 시국선언문</h2>
-                    <span className={styles.detailDate}>선언 일자: {selectedSchool.date}</span>
+                    <h2 className={styles.detailSchoolName}>{selectedSchool.summary}</h2>
+                    <span className={styles.detailDate}>
+                      {selectedSchool.name}{selectedSchool.organization ? ` · ${selectedSchool.organization}` : ''} | 선언 일자: {selectedSchool.date}
+                    </span>
                   </div>
                   <button onClick={() => setSelectedId(null)} className={styles.detailCloseButton} title="닫기">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
