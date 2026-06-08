@@ -366,7 +366,7 @@
   position: sticky;
   top: 0; /* Sticks to viewport top while reading text */
   height: 100vh; /* Fixed viewport height for sticky reading */
-  background-color: var(--surface-strong);
+  background-color: #ffffff;
 }
 
 .detailImageContainer img {
