@@ -347,7 +347,7 @@
 /* === Detail View (Inline) === */
 .detailViewSection {
   background-color: var(--surface-soft);
-  border-radius: var(--rounded-xl);
+  border-radius: 0;
   border: 1px solid var(--hairline);
   overflow: hidden;
   margin-bottom: 48px;
@@ -361,9 +361,9 @@
 }
 
 .detailImageContainer {
-  flex: 1;
+  flex: 1.25; /* More weight to the poster image */
   position: relative;
-  min-height: 50vh;
+  min-height: 65vh; /* Taller viewport height for better reading */
   background-color: var(--surface-strong);
 }
 

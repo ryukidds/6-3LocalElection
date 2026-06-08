@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { SchoolDeclaration, getImageUrl } from '@/data/schools';
 import { supabase } from '@/lib/supabaseClient';
 import styles from './ArchiveDashboard.module.css';
+import PosterImageViewer from './PosterImageViewer';
 
 function generateUniqueId(): string {
   return `id_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -346,12 +347,10 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
           <div ref={detailRef} className={styles.detailViewSection}>
             <div className={styles.detailContentWrapper}>
               <div className={styles.detailImageContainer}>
-                <Image
+                <PosterImageViewer
                   src={getImageUrl(selectedSchool)}
                   alt={`${selectedSchool.name} 시국선언문`}
-                  fill
-                  sizes="(max-width: 992px) 100vw, 50vw"
-                  priority
+                  title={selectedSchool.summary}
                 />
               </div>
 
