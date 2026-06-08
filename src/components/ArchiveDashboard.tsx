@@ -350,8 +350,8 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
         
         {/* Detail View */}
         {selectedSchool && (
-          <div ref={detailRef} className={styles.detailViewSection}>
-            <div className={styles.detailContentWrapper}>
+          <>
+            <div ref={detailRef} className={styles.detailContentWrapper}>
               <div className={styles.detailImageContainer}>
                 <PosterImageViewer
                   src={getImageUrl(selectedSchool)}
@@ -408,7 +408,7 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
             <div className={styles.detailDivider}>
               다른 대학들의 시국선언문 이어보기
             </div>
-          </div>
+          </>
         )}
 
         <div ref={containerRef} className={viewMode === 'grid' ? styles.gridContainer : styles.listContainer}>

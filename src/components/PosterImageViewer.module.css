@@ -6,7 +6,6 @@
   background-color: #ffffff;
   overflow: hidden;
   border-radius: 0 !important; /* Force no radius */
-  border-right: 1px solid var(--hairline);
 }
 
 .posterImage {
