@@ -30,8 +30,8 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [declarations, setDeclarations] = useState<SchoolDeclaration[]>(initialDeclarations);
@@ -102,31 +102,36 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedFile) {
+    if (selectedFiles.length === 0) {
       alert('성명서 이미지를 첨부해주세요.');
       return;
     }
 
     setIsSubmitting(true);
-    let uploadedImageUrl = '';
 
     try {
-      const fileName = generateFileName(selectedFile.name);
-      const filePath = `raw/${fileName}`;
+      // Parallel upload of all selected files
+      const uploadPromises = selectedFiles.map(async (file) => {
+        const fileName = generateFileName(file.name);
+        const filePath = `raw/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('declarations')
-        .upload(filePath, selectedFile);
+        const { error: uploadError } = await supabase.storage
+          .from('declarations')
+          .upload(filePath, file);
 
-      if (uploadError) {
-        throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
-      }
+        if (uploadError) {
+          throw new Error(`이미지 업로드 실패 (${file.name}): ${uploadError.message}`);
+        }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('declarations')
-        .getPublicUrl(filePath);
+        const { data: { publicUrl } } = supabase.storage
+          .from('declarations')
+          .getPublicUrl(filePath);
 
-      uploadedImageUrl = publicUrl;
+        return publicUrl;
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      const finalFallbackUrl = uploadedUrls.join(',');
 
       const newId = generateUniqueId();
       const { error: dbError } = await supabase
@@ -143,7 +148,7 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
             summary: submitForm.summary || `${submitForm.name} ${submitForm.organization} 시국선언문`,
             content: submitForm.content || null,
             status: 'pending',
-            fallback_url: uploadedImageUrl
+            fallback_url: finalFallbackUrl
           }
         ]);
 
@@ -169,34 +174,35 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 용량은 최대 5MB까지 업로드 가능합니다.');
-      return;
+    // Validate size limit
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`파일 용량은 최대 5MB까지 업로드 가능합니다. (${file.name})`);
+        return;
+      }
     }
 
-    setSelectedFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setImagePreviewUrl(previewUrl);
+    setSelectedFiles((prev) => [...prev, ...files]);
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setImagePreviewUrls((prev) => [...prev, ...newPreviews]);
   };
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl);
-      setImagePreviewUrl(null);
-    }
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedFile(null);
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl);
-      setImagePreviewUrl(null);
-    }
+    setSelectedFiles([]);
+    imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    setImagePreviewUrls([]);
   };
 
   const handleCardClick = (id: string) => {
@@ -508,27 +514,31 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
                 <div className={styles.formGroup}>
                   <label>성명서 이미지 <span>*</span></label>
                   <div className={styles.fileInputWrapper}>
-                    {imagePreviewUrl ? (
-                      <div className={styles.imagePreviewContainer}>
-                        <img src={imagePreviewUrl} alt="선언서 미리보기" className={styles.imagePreview} />
-                        <button type="button" className={styles.removeImageBtn} onClick={handleRemoveFile}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
-                        </button>
+                    {imagePreviewUrls.length > 0 && (
+                      <div className={styles.multiImagePreviewContainer}>
+                        {imagePreviewUrls.map((url, idx) => (
+                          <div key={idx} className={styles.imageThumbBox}>
+                            <img src={url} alt={`선언서 미리보기 ${idx + 1}`} className={styles.imagePreviewThumb} />
+                            <button type="button" className={styles.removeImageBtn} onClick={() => handleRemoveFile(idx)}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <label className={styles.fileInputBtn}>
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                          <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        <span>이미지 첨부 (최대 5MB)</span>
-                        <input type="file" className={styles.fileInput} accept="image/*" required onChange={handleFileChange} />
-                      </label>
                     )}
+                    
+                    <label className={styles.fileInputBtn}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                      <span>이미지 첨부 (다중 선택 가능, 최대 5MB)</span>
+                      <input type="file" className={styles.fileInput} accept="image/*" multiple onChange={handleFileChange} required={imagePreviewUrls.length === 0} />
+                    </label>
                   </div>
                 </div>
                 

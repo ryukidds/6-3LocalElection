@@ -47,8 +47,8 @@ export default function AdminPage() {
     fallback_url: '',
   });
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -123,8 +123,8 @@ export default function AdminPage() {
       category: post.category || '기타',
       fallback_url: post.fallback_url || post.fallbackUrl || '',
     });
-    setSelectedFile(null);
-    setImagePreviewUrl(null);
+    setSelectedFiles([]);
+    setImagePreviewUrls([]);
     setIsEditorOpen(true);
   };
 
@@ -143,19 +143,17 @@ export default function AdminPage() {
       category: '기타',
       fallback_url: '',
     });
-    setSelectedFile(null);
-    setImagePreviewUrl(null);
+    setSelectedFiles([]);
+    setImagePreviewUrls([]);
     setIsEditorOpen(true);
   };
 
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
     setEditingPost(null);
-    setSelectedFile(null);
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl);
-      setImagePreviewUrl(null);
-    }
+    setSelectedFiles([]);
+    imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    setImagePreviewUrls([]);
   };
 
   const handleInputChange = (
@@ -166,44 +164,75 @@ export default function AdminPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 용량은 최대 5MB까지 업로드 가능합니다.');
-      return;
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`파일 용량은 최대 5MB까지 업로드 가능합니다. (${file.name})`);
+        return;
+      }
     }
 
-    setSelectedFile(file);
-    const preview = URL.createObjectURL(file);
-    setImagePreviewUrl(preview);
+    setSelectedFiles((prev) => [...prev, ...files]);
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setImagePreviewUrls((prev) => [...prev, ...newPreviews]);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleRemoveExistingUrl = (index: number) => {
+    const urls = form.fallback_url ? form.fallback_url.split(',').filter(Boolean) : [];
+    const updatedUrls = urls.filter((_, i) => i !== index);
+    setForm((prev) => ({
+      ...prev,
+      fallback_url: updatedUrls.join(','),
+    }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    let uploadedUrl = form.fallback_url;
 
     try {
-      // 1. Upload new image if exists
-      if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        const filePath = `raw/${fileName}`;
+      let finalFallbackUrl = form.fallback_url;
 
-        const { error: uploadError } = await supabase.storage
-          .from('declarations')
-          .upload(filePath, selectedFile);
+      if (selectedFiles.length > 0) {
+        const uploadPromises = selectedFiles.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+          const filePath = `raw/${fileName}`;
 
-        if (uploadError) {
-          throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
-        }
+          const { error: uploadError } = await supabase.storage
+            .from('declarations')
+            .upload(filePath, file);
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('declarations')
-          .getPublicUrl(filePath);
+          if (uploadError) {
+            throw new Error(`이미지 업로드 실패 (${file.name}): ${uploadError.message}`);
+          }
 
-        uploadedUrl = publicUrl;
+          const { data: { publicUrl } } = supabase.storage
+            .from('declarations')
+            .getPublicUrl(filePath);
+
+          return publicUrl;
+        });
+
+        const uploadedUrls = await Promise.all(uploadPromises);
+        const existingUrls = form.fallback_url ? form.fallback_url.split(',').filter(Boolean) : [];
+        finalFallbackUrl = [...existingUrls, ...uploadedUrls].join(',');
+      }
+
+      if (!finalFallbackUrl) {
+        alert('최소 하나의 성명서 이미지가 필요합니다.');
+        setIsSaving(false);
+        return;
       }
 
       const postData = {
@@ -216,7 +245,7 @@ export default function AdminPage() {
         status: form.status,
         region: form.region || '전체',
         category: form.category || '기타',
-        fallback_url: uploadedUrl,
+        fallback_url: finalFallbackUrl,
       };
 
       if (editingPost) {
@@ -548,27 +577,52 @@ export default function AdminPage() {
                     type="file"
                     className={styles.formInput}
                     accept="image/*"
+                    multiple
                     onChange={handleFileChange}
-                    required={!editingPost && !form.fallback_url}
+                    required={!editingPost && selectedFiles.length === 0 && !form.fallback_url}
                   />
                   
                   {/* 이미지 프리뷰 */}
                   <div className={styles.imagePreviewArea}>
-                    {imagePreviewUrl ? (
-                      <div>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>새 파일 미리보기:</span>
-                        <div className={styles.currentImageThumb}>
-                          <img src={imagePreviewUrl} alt="새 파일 미리보기" />
+                    {/* 기존 이미지 목록 */}
+                    {form.fallback_url && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>현재 적용 이미지 (삭제 시 저장 후 반영됩니다):</span>
+                        <div className={styles.multiImagePreviewContainer}>
+                          {form.fallback_url.split(',').filter(Boolean).map((url, idx) => (
+                            <div key={`existing-${idx}`} className={styles.imageThumbBox}>
+                              <img src={url} alt={`기존 이미지 ${idx + 1}`} className={styles.imagePreviewThumb} />
+                              <button type="button" className={styles.removeImageBtn} onClick={() => handleRemoveExistingUrl(idx)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ) : form.fallback_url ? (
+                    )}
+
+                    {/* 새 파일 미리보기 */}
+                    {imagePreviewUrls.length > 0 && (
                       <div>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>현재 적용 이미지:</span>
-                        <div className={styles.currentImageThumb}>
-                          <img src={form.fallback_url} alt="현재 이미지" />
+                        <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>새로 추가할 이미지 미리보기:</span>
+                        <div className={styles.multiImagePreviewContainer}>
+                          {imagePreviewUrls.map((url, idx) => (
+                            <div key={`new-${idx}`} className={styles.imageThumbBox}>
+                              <img src={url} alt={`새 파일 미리보기 ${idx + 1}`} className={styles.imagePreviewThumb} />
+                              <button type="button" className={styles.removeImageBtn} onClick={() => handleRemoveFile(idx)}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 </div>
 

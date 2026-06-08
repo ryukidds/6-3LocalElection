@@ -365,7 +365,7 @@
 
 .modalContent {
   background-color: var(--canvas);
-  border-radius: var(--rounded-xl);
+  border-radius: 0;
   padding: 40px;
   width: 100%;
   max-width: 600px;
@@ -392,7 +392,7 @@
 .modalCloseBtn {
   background-color: var(--surface-soft);
   border: none;
-  border-radius: var(--rounded-full);
+  border-radius: 0;
   width: 36px;
   height: 36px;
   cursor: pointer;
@@ -424,7 +424,7 @@
 
 .formScrollArea::-webkit-scrollbar-thumb {
   background: var(--muted-soft);
-  border-radius: var(--rounded-pill);
+  border-radius: 0;
 }
 
 .formGroup {
@@ -448,7 +448,7 @@
 .formInput {
   background-color: var(--canvas);
   border: 1px solid var(--hairline);
-  border-radius: var(--rounded-md);
+  border-radius: 0;
   padding: 12px 16px;
   font-size: 15px;
   font-family: var(--font-sans);
@@ -465,7 +465,7 @@
 .formTextarea {
   background-color: var(--canvas);
   border: 1px solid var(--hairline);
-  border-radius: var(--rounded-md);
+  border-radius: 0;
   padding: 12px 16px;
   font-size: 15px;
   font-family: var(--font-sans);
@@ -493,7 +493,7 @@
   height: 140px;
   position: relative;
   border: 1px solid var(--hairline);
-  border-radius: var(--rounded-md);
+  border-radius: 0;
   overflow: hidden;
   background-color: var(--surface-soft);
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
@@ -501,6 +501,44 @@
 
 .currentImageThumb img {
   object-fit: cover;
+}
+
+.multiImagePreviewContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.imageThumbBox {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border: 1px solid var(--hairline);
+  background-color: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.imagePreviewThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.removeImageBtn {
+  position: absolute;
+  top: 4px; right: 4px;
+  background-color: rgba(10, 11, 13, 0.7);
+  color: var(--on-dark);
+  border: none;
+  border-radius: 0;
+  width: 24px; height: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
 
 .formActions {
@@ -515,7 +553,7 @@
   background-color: var(--surface-soft);
   color: var(--ink);
   border: none;
-  border-radius: var(--rounded-pill);
+  border-radius: 0;
   padding: 12px 28px;
   font-size: 15px;
   font-weight: 600;
@@ -531,7 +569,7 @@
   background-color: var(--primary);
   color: var(--on-primary);
   border: none;
-  border-radius: var(--rounded-pill);
+  border-radius: 0;
   padding: 12px 28px;
   font-size: 15px;
   font-weight: 600;

@@ -167,6 +167,85 @@
   }
 }
 
+/* --- Navigation & Carousel Controls (Flat style) --- */
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(10, 11, 13, 0.75);
+  color: var(--on-dark);
+  border: 1px solid #333;
+  border-radius: 0 !important; /* Flat */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.navBtnPrev {
+  left: 16px;
+}
+
+.navBtnNext {
+  right: 16px;
+}
+
+.navBtn:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.pageBadge {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background-color: rgba(10, 11, 13, 0.85);
+  color: var(--on-dark);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  border: 1px solid #333;
+  border-radius: 0 !important;
+  z-index: 10;
+}
+
+/* Lightbox Nav Buttons */
+.lightboxNavBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(34, 34, 34, 0.7);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 0 !important;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1020;
+  transition: all 0.2s;
+}
+
+.lightboxNavBtnPrev {
+  left: 32px;
+}
+
+.lightboxNavBtnNext {
+  right: 32px;
+}
+
+.lightboxNavBtn:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
 @media (max-width: 768px) {
   .viewerContainer {
     border-right: none;
@@ -180,5 +259,15 @@
   .lightboxToolbar {
     width: 100%;
     justify-content: flex-end;
+  }
+  .lightboxNavBtn {
+    width: 44px;
+    height: 44px;
+  }
+  .lightboxNavBtnPrev {
+    left: 16px;
+  }
+  .lightboxNavBtnNext {
+    right: 16px;
   }
 }
