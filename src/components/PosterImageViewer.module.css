@@ -10,6 +10,12 @@
   border-right: 1px solid var(--hairline);
 }
 
+.posterImage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .posterImage img {
   object-fit: contain !important;
   border-radius: 0 !important;
