@@ -1,21 +1,38 @@
-@font-face {
-    font-family: '87mmDailyRegular';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201@1.0/87MMILSANG-Regular.woff2') format('woff2');
-    font-weight: normal;
-    font-display: swap;
-}
-
 :root {
-  --bg-color: #000000;
-  --bg-sidebar: rgba(10, 10, 10, 0.7);
-  --text-primary: #ffffff;
-  --text-secondary: #8e8e93;
-  --text-muted: #3a3a3c;
-  --accent-color: #ffffff;
-  --accent-hover: #ff0000; /* Pure Red */
-  --border-color: rgba(255, 255, 255, 0.12);
-  --font-sans: '87mmDailyRegular', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-display: '87mmDailyRegular', sans-serif;
+  /* Coinbase Colors */
+  --primary: #df2020;
+  --primary-active: #b81717;
+  --primary-disabled: #f5c2c2;
+  --ink: #0a0b0d;
+  --body: #5b616e;
+  --body-strong: #0a0b0d;
+  --muted: #7c828a;
+  --muted-soft: #a8acb3;
+  --hairline: #dee1e6;
+  --hairline-soft: #eef0f3;
+  --canvas: #ffffff;
+  --surface-soft: #f7f7f7;
+  --surface-card: #ffffff;
+  --surface-strong: #eef0f3;
+  --surface-dark: #0a0b0d;
+  --surface-dark-elevated: #16181c;
+  --on-primary: #ffffff;
+  --on-dark: #ffffff;
+  --on-dark-soft: #a8acb3;
+  
+  /* Radii */
+  --rounded-xs: 4px;
+  --rounded-sm: 8px;
+  --rounded-md: 12px;
+  --rounded-lg: 16px;
+  --rounded-xl: 24px;
+  --rounded-pill: 100px;
+  --rounded-full: 9999px;
+
+  /* Typography */
+  --font-display: var(--font-inter), -apple-system, system-ui, sans-serif;
+  --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
 }
 
 * {
@@ -24,35 +41,28 @@
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.2px;
 }
 
 body {
-  background-color: var(--bg-color);
-  color: var(--text-primary);
+  background-color: var(--canvas);
+  color: var(--body);
   font-family: var(--font-sans);
-  overflow: hidden;
-  height: 100vh;
+  overflow-x: hidden;
   width: 100vw;
   position: relative;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 400; /* Modest weights signaling editorial calm */
+  color: var(--ink);
+  letter-spacing: -1px;
 }
 
-/* 커스텀 마우스 커서 스타일 (데스크톱 전용) */
-@media (hover: hover) and (pointer: fine) {
-  body, a, button, [role="button"], li {
-    cursor: none !important;
-  }
-}
-
-/* 스크롤바 디자인 */
+/* Scrollbar design */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -60,33 +70,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
-  border-radius: 2px;
+  background: var(--muted-soft);
+  border-radius: var(--rounded-pill);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--muted);
 }
 
-/* 텍스트 드래그 선택 색상 */
+/* Text Selection */
 ::selection {
-  background-color: var(--accent-hover);
-  color: #000000;
-}
-
-/* 커스텀 마우스 커서 스타일 */
-.custom-cursor {
-  width: 38px;
-  height: 38px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 99999;
-  background-image: url('/images/cursor-stamp.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  will-change: transform;
+  background-color: var(--primary);
+  color: var(--on-primary);
 }
 
