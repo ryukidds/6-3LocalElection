@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import styles from './PosterImageViewer.module.css';
 
@@ -15,6 +16,11 @@ export default function PosterImageViewer({ src, alt, title }: PosterImageViewer
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close and flip pages on key press
   useEffect(() => {
@@ -149,8 +155,8 @@ export default function PosterImageViewer({ src, alt, title }: PosterImageViewer
         </div>
       </div>
 
-      {/* Full screen Lightbox Overlay */}
-      {isOpen && (
+      {/* Full screen Lightbox Overlay (Portaled to document.body to prevent z-index issues) */}
+      {isOpen && mounted && typeof window !== 'undefined' && createPortal(
         <div className={styles.lightboxOverlay} onClick={handleClose}>
           
           <header className={styles.lightboxHeader} onClick={(e) => e.stopPropagation()}>
@@ -244,7 +250,8 @@ export default function PosterImageViewer({ src, alt, title }: PosterImageViewer
             )}
           </div>
 
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
