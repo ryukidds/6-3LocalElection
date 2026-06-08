@@ -355,20 +355,26 @@ export default function ArchiveDashboard({ initialDeclarations }: Props) {
               </div>
 
               <div className={styles.detailTextContainer}>
-                <div className={styles.detailHeader}>
-                  <div>
-                    <h2 className={styles.detailSchoolName}>{selectedSchool.summary}</h2>
-                    <span className={styles.detailDate}>
-                      {selectedSchool.name}{selectedSchool.organization ? ` · ${selectedSchool.organization}` : ''} | 선언 일자: {selectedSchool.date}
-                    </span>
-                  </div>
-                  <button onClick={() => setSelectedId(null)} className={styles.detailCloseButton} title="닫기">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
+                <button onClick={() => setSelectedId(null)} className={styles.detailCloseButton} title="닫기">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+
+                <div className={styles.detailSchoolHeader}>
+                  <h3 className={styles.detailSchoolName}>{selectedSchool.name}</h3>
+                  {selectedSchool.organization && (
+                    <div className={styles.detailOrgName}>{selectedSchool.organization}</div>
+                  )}
+                  <div className={styles.detailMetadata}>{selectedSchool.date}</div>
                 </div>
+
+                <h2 className={styles.detailBigTitle}>{selectedSchool.summary}</h2>
+
+                <hr className={styles.detailHr} />
+
+                <div className={styles.detailSubheading}>{selectedSchool.summary}</div>
 
                 <div className={styles.detailBody}>
                   {selectedSchool.content ? (
