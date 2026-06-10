@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch and duplicate assets
+scratch/
+/중앙선거관리위원회.jpg

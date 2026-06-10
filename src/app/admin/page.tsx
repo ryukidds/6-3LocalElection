@@ -18,6 +18,22 @@ interface AdminDeclaration {
   category?: string;
   fallbackUrl?: string;
   fallback_url?: string;
+  youtube_url?: string;
+}
+
+function extractYouTubeId(url: string | undefined): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|live\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
+interface AttachmentItem {
+  id: string;
+  type: 'existing' | 'new';
+  url?: string;
+  file?: File;
+  previewUrl?: string;
 }
 
 export default function AdminPage() {
@@ -45,10 +61,11 @@ export default function AdminPage() {
     region: '전체',
     category: '기타',
     fallback_url: '',
+    youtube_url: '',
   });
 
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'statement' | 'video'>('statement');
   const [isSaving, setIsSaving] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -122,9 +139,15 @@ export default function AdminPage() {
       region: post.region || '전체',
       category: post.category || '기타',
       fallback_url: post.fallback_url || post.fallbackUrl || '',
+      youtube_url: post.youtube_url || '',
     });
-    setSelectedFiles([]);
-    setImagePreviewUrls([]);
+    const urls = (post.fallback_url || post.fallbackUrl || '').split(',').filter(Boolean);
+    const initialAttachments = urls.map((url, idx) => ({
+      id: `existing-${idx}-${url}`,
+      type: 'existing' as const,
+      url,
+    }));
+    setAttachments(initialAttachments);
     setIsEditorOpen(true);
   };
 
@@ -142,18 +165,21 @@ export default function AdminPage() {
       region: '전체',
       category: '기타',
       fallback_url: '',
+      youtube_url: '',
     });
-    setSelectedFiles([]);
-    setImagePreviewUrls([]);
+    setAttachments([]);
     setIsEditorOpen(true);
   };
 
   const handleCloseEditor = () => {
     setIsEditorOpen(false);
     setEditingPost(null);
-    setSelectedFiles([]);
-    imagePreviewUrls.forEach((url) => URL.revokeObjectURL(url));
-    setImagePreviewUrls([]);
+    attachments.forEach((item) => {
+      if (item.type === 'new' && item.previewUrl) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    });
+    setAttachments([]);
   };
 
   const handleInputChange = (
@@ -174,37 +200,67 @@ export default function AdminPage() {
       }
     }
 
-    setSelectedFiles((prev) => [...prev, ...files]);
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setImagePreviewUrls((prev) => [...prev, ...newPreviews]);
+    const newItems = files.map((file, idx) => {
+      const previewUrl = URL.createObjectURL(file);
+      return {
+        id: `new-${Date.now()}-${idx}-${Math.random()}`,
+        type: 'new' as const,
+        file,
+        previewUrl,
+      };
+    });
+    setAttachments((prev) => [...prev, ...newItems]);
+    e.target.value = '';
   };
 
-  const handleRemoveFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviewUrls((prev) => {
-      URL.revokeObjectURL(prev[index]);
-      return prev.filter((_, i) => i !== index);
+  const moveAttachment = (index: number, direction: 'left' | 'right') => {
+    setAttachments((prev) => {
+      const next = [...prev];
+      const targetIndex = direction === 'left' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= next.length) return prev;
+      const temp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = temp;
+      return next;
     });
   };
 
-  const handleRemoveExistingUrl = (index: number) => {
-    const urls = form.fallback_url ? form.fallback_url.split(',').filter(Boolean) : [];
-    const updatedUrls = urls.filter((_, i) => i !== index);
-    setForm((prev) => ({
-      ...prev,
-      fallback_url: updatedUrls.join(','),
-    }));
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target && target.type === 'new' && target.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
   };
+
+  useEffect(() => {
+    if (isAuthenticated && declarations.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get('editId');
+      if (editId) {
+        const post = declarations.find((d) => d.id === editId);
+        if (post) {
+          handleEditClick(post);
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
+    }
+  }, [isAuthenticated, declarations]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
-      let finalFallbackUrl = form.fallback_url;
-
-      if (selectedFiles.length > 0) {
-        const uploadPromises = selectedFiles.map(async (file) => {
+      // Upload new files and build final URL list in the exact attachments order
+      const uploadPromises = attachments.map(async (item) => {
+        if (item.type === 'existing') {
+          return item.url!;
+        } else {
+          const file = item.file!;
           const fileExt = file.name.split('.').pop();
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
           const filePath = `raw/${fileName}`;
@@ -222,15 +278,22 @@ export default function AdminPage() {
             .getPublicUrl(filePath);
 
           return publicUrl;
-        });
+        }
+      });
 
-        const uploadedUrls = await Promise.all(uploadPromises);
-        const existingUrls = form.fallback_url ? form.fallback_url.split(',').filter(Boolean) : [];
-        finalFallbackUrl = [...existingUrls, ...uploadedUrls].join(',');
+      const uploadedUrls = await Promise.all(uploadPromises);
+      let finalFallbackUrl = uploadedUrls.join(',');
+
+      // 유튜브 영상이고 fallback_url(썸네일)이 지정 안 되었을 경우 자동 매핑
+      if (form.youtube_url && !finalFallbackUrl) {
+        const ytId = extractYouTubeId(form.youtube_url);
+        if (ytId) {
+          finalFallbackUrl = `https://img.youtube.com/vi/${ytId}/0.jpg`;
+        }
       }
 
-      if (!finalFallbackUrl) {
-        alert('최소 하나의 성명서 이미지가 필요합니다.');
+      if (!finalFallbackUrl && !form.youtube_url) {
+        alert('성명서 이미지 또는 유튜브 영상 링크 중 하나는 필수입니다.');
         setIsSaving(false);
         return;
       }
@@ -245,7 +308,8 @@ export default function AdminPage() {
         status: form.status,
         region: form.region || '전체',
         category: form.category || '기타',
-        fallback_url: finalFallbackUrl,
+        fallback_url: finalFallbackUrl || null,
+        youtube_url: form.youtube_url || null,
       };
 
       if (editingPost) {
@@ -355,6 +419,9 @@ export default function AdminPage() {
   // Filtered declarations for dashboard view
   const filteredDeclarations = useMemo(() => {
     return declarations.filter((post) => {
+      // Filter by activeTab (statement vs video)
+      const matchesTab = activeTab === 'video' ? !!post.youtube_url : !post.youtube_url;
+
       const matchSearch =
         post.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (post.organization && post.organization.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -362,9 +429,9 @@ export default function AdminPage() {
 
       const matchStatus = statusFilter === 'all' || post.status === statusFilter;
 
-      return matchSearch && matchStatus;
+      return matchesTab && matchSearch && matchStatus;
     });
-  }, [declarations, searchTerm, statusFilter]);
+  }, [declarations, searchTerm, statusFilter, activeTab]);
 
   if (!isAuthenticated) {
     return (
@@ -406,6 +473,28 @@ export default function AdminPage() {
           <h2>게시글 관리</h2>
           <button onClick={handleNewClick} className={styles.newPostBtn}>
             + 새 게시글 작성
+          </button>
+        </div>
+
+        {/* 이원화 탭 스위처 추가 */}
+        <div className={styles.tabContainer}>
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'statement' ? styles.tabBtnActive : ''}`}
+            onClick={() => {
+              setActiveTab('statement');
+              setSelectedIds([]);
+            }}
+          >
+            시국성명 (글/이미지)
+          </button>
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'video' ? styles.tabBtnActive : ''}`}
+            onClick={() => {
+              setActiveTab('video');
+              setSelectedIds([]);
+            }}
+          >
+            시국선언 (영상)
           </button>
         </div>
 
@@ -475,7 +564,7 @@ export default function AdminPage() {
                     />
                   </th>
                   <th>학교 / 조직</th>
-                  <th>선언문 요약(제목)</th>
+                  <th>{activeTab === 'video' ? '영상 제목' : '성명서 요약(제목)'}</th>
                   <th>선언 일자</th>
                   <th>지역 / 분류</th>
                   <th>상태</th>
@@ -572,58 +661,62 @@ export default function AdminPage() {
                 
                 {/* 1. 이미지 업로드 */}
                 <div className={styles.formGroup}>
-                  <label>성명서 이미지 {!editingPost && <span>*</span>}</label>
+                  <label>성명서 이미지 첨부</label>
                   <input
                     type="file"
                     className={styles.formInput}
                     accept="image/*"
                     multiple
                     onChange={handleFileChange}
-                    required={!editingPost && selectedFiles.length === 0 && !form.fallback_url}
+                    required={!editingPost && !form.youtube_url && attachments.length === 0}
                   />
                   
-                  {/* 이미지 프리뷰 */}
-                  <div className={styles.imagePreviewArea}>
-                    {/* 기존 이미지 목록 */}
-                    {form.fallback_url && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>현재 적용 이미지 (삭제 시 저장 후 반영됩니다):</span>
-                        <div className={styles.multiImagePreviewContainer}>
-                          {form.fallback_url.split(',').filter(Boolean).map((url, idx) => (
-                            <div key={`existing-${idx}`} className={styles.imageThumbBox}>
-                              <img src={url} alt={`기존 이미지 ${idx + 1}`} className={styles.imagePreviewThumb} />
-                              <button type="button" className={styles.removeImageBtn} onClick={() => handleRemoveExistingUrl(idx)}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                              </button>
+                  {/* 통합 이미지 목록 및 순서 조절 */}
+                  {attachments.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '8px' }}>
+                        첨부 파일 순서 변경 (좌우 화살표 버튼을 클릭해 순서를 변경할 수 있습니다):
+                      </span>
+                      <div className={styles.multiImagePreviewContainer}>
+                        {attachments.map((item, idx) => {
+                          const srcUrl = item.type === 'existing' ? item.url! : item.previewUrl!;
+                          return (
+                            <div key={item.id} className={styles.attachmentCard}>
+                              <div className={styles.imageThumbBox}>
+                                <img src={srcUrl} alt={`첨부 이미지 ${idx + 1}`} className={styles.imagePreviewThumb} />
+                              </div>
+                              <div className={styles.attachmentControlBox}>
+                                <button
+                                  type="button"
+                                  onClick={() => moveAttachment(idx, 'left')}
+                                  disabled={idx === 0}
+                                  title="왼쪽으로 이동"
+                                >
+                                  ◀
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttachment(item.id)}
+                                  style={{ color: 'var(--primary)' }}
+                                  title="삭제"
+                                >
+                                  ✖
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveAttachment(idx, 'right')}
+                                  disabled={idx === attachments.length - 1}
+                                  title="오른쪽으로 이동"
+                                >
+                                  ▶
+                                </button>
+                              </div>
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
-                    )}
-
-                    {/* 새 파일 미리보기 */}
-                    {imagePreviewUrls.length > 0 && (
-                      <div>
-                        <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>새로 추가할 이미지 미리보기:</span>
-                        <div className={styles.multiImagePreviewContainer}>
-                          {imagePreviewUrls.map((url, idx) => (
-                            <div key={`new-${idx}`} className={styles.imageThumbBox}>
-                              <img src={url} alt={`새 파일 미리보기 ${idx + 1}`} className={styles.imagePreviewThumb} />
-                              <button type="button" className={styles.removeImageBtn} onClick={() => handleRemoveFile(idx)}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>
@@ -721,6 +814,34 @@ export default function AdminPage() {
                     <option value="approved">approved (승인노출)</option>
                     <option value="rejected">rejected (반려)</option>
                   </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>유튜브 영상 링크</label>
+                  <input
+                    type="text"
+                    name="youtube_url"
+                    className={styles.formInput}
+                    placeholder="예: https://www.youtube.com/watch?v=..."
+                    value={form.youtube_url}
+                    onChange={handleInputChange}
+                  />
+                  {form.youtube_url && extractYouTubeId(form.youtube_url) && (
+                    <div style={{ marginTop: '8px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>유튜브 영상 프리뷰:</span>
+                      <div style={{ position: 'relative', width: '240px', height: '135px', overflow: 'hidden', borderRadius: '8px' }}>
+                        <iframe
+                          src={`https://www.youtube.com/embed/${extractYouTubeId(form.youtube_url)}`}
+                          title="YouTube video preview"
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          allowFullScreen
+                          style={{ border: 'none' }}
+                        ></iframe>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className={styles.formGroup}>

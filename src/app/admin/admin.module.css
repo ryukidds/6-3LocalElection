@@ -683,3 +683,91 @@
     transform: translateY(0);
   }
 }
+
+/* === Tab Switcher in Admin Dashboard === */
+.tabContainer {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 24px;
+  background: none;
+  padding: 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  padding: 12px 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.tabBtn:hover {
+  color: var(--primary);
+}
+
+.tabBtnActive {
+  color: var(--primary);
+}
+
+.tabBtnActive::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary);
+}
+
+/* === Attachment Card and Reordering === */
+.attachmentCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--hairline);
+  padding: 8px;
+  background-color: var(--surface-soft);
+  border-radius: var(--rounded-md);
+  position: relative;
+}
+
+.attachmentControlBox {
+  display: flex;
+  justify-content: space-between;
+  width: 90px;
+  gap: 4px;
+}
+
+.attachmentControlBox button {
+  flex: 1;
+  background-color: var(--canvas);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+  font-size: 11px;
+  padding: 4px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.attachmentControlBox button:hover:not(:disabled) {
+  background-color: var(--hairline-soft);
+  color: var(--primary);
+}
+
+.attachmentControlBox button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
