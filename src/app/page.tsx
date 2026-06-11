@@ -150,7 +150,7 @@ export default function Home() {
       <section className={styles.statsSection}>
         <div className={styles.statsInner}>
           <h2 className={styles.statsTitle}>
-            전국 <span className={styles.statsNumber}>{stats.universities}</span>개 대학에서 <br className={styles.mobileBr} /> <span className={styles.statsNumber}>{stats.declarations}</span>건의 성명이 외쳤습니다.
+            전국 <span className={styles.statsNumber}>{stats.universities}</span>개 대학에서 <br className={styles.mobileBr} /> <span className={styles.statsNumber}>{stats.declarations}</span>건의 성명을 외쳤습니다.
           </h2>
         </div>
       </section>
@@ -222,8 +222,8 @@ export default function Home() {
                   공유 링크 복사
                 </button>
                 {isAdmin && (
-                  <button 
-                    className={styles.actionBtn} 
+                  <button
+                    className={styles.actionBtn}
                     onClick={() => window.open(`/admin?editId=${selectedSchool.id}`, '_blank')}
                     style={{ backgroundColor: 'var(--primary)', color: 'white' }}
                   >
@@ -242,7 +242,7 @@ export default function Home() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
             <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.7px', color: 'var(--text)', margin: 0 }}>
-              부정한 선거에 대한<br className={styles.mobileBr} />청년들의 목소리를 기록하다.
+              부정한 선거에 대한 <br className={styles.mobileBr} />청년들의 목소리를 기록하다.
             </h2>
             <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '4px 0 0 0' }}>
               전국 대학생들의 최신 시국성명서와 대자보를 확인하세요.
@@ -250,7 +250,7 @@ export default function Home() {
           </div>
           {!isMobile && (
             <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
-              전체 목록 보기 →
+              전체 보기 →
             </Link>
           )}
         </div>
@@ -318,7 +318,7 @@ export default function Home() {
         {isMobile && (
           <div style={{ marginTop: '24px', textAlign: 'center' }}>
             <Link href="/archive" className={styles.mobileMoreLink}>
-              전체 목록 보기 →
+              전체 보기 →
             </Link>
           </div>
         )}
@@ -352,8 +352,8 @@ export default function Home() {
           <div className={styles.gridContainer}>
             {latestVideos.map((school: any) => {
               const ytId = extractYouTubeId(school.youtube_url);
-              const thumbUrl = ytId 
-                ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` 
+              const thumbUrl = ytId
+                ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`
                 : "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1200";
 
               return (
