@@ -226,8 +226,8 @@ export default function Home() {
         </section>
       )}
 
-      {/* 4구역: 최신 시국 기록 그리드 */}
-      <section className={styles.archiveMain} style={{ paddingTop: 0 }}>
+      {/* 4구역: 최신 시국성명 그리드 */}
+      <section className={styles.archiveMain} style={{ paddingTop: 0, paddingBottom: '40px' }}>
         {/* 4.1: 최신 시국성명 (글/이미지) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
@@ -243,7 +243,7 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className={styles.gridContainer} style={{ marginBottom: '56px' }}>
+        <div className={styles.gridContainer}>
           {latestStatements.map((school: any) => {
             const thumbUrl = getImageUrl(school);
 
@@ -283,72 +283,82 @@ export default function Home() {
           )}
         </div>
 
-        {/* 4.2: 최신 시국선언 (영상) */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
-          <div>
-            <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.7px', color: 'var(--text)', margin: 0 }}>
-              전국 대학생들의 시국선언
-            </h2>
-            <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '4px 0 0 0' }}>
-              공정한 선거정의를 외치는 대학별 현장 결의 및 선언 영상입니다.
-            </p>
-          </div>
-          <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
-            전체 영상 보기 →
-          </Link>
-        </div>
-
-        <div className={styles.gridContainer}>
-          {latestVideos.map((school: any) => {
-            const ytId = extractYouTubeId(school.youtube_url);
-            const thumbUrl = ytId 
-              ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` 
-              : "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1200";
-
-            return (
-              <article
-                key={school.id}
-                onClick={() => setSelectedId(school.id)}
-                className={`${styles.gridCard} ${selectedId === school.id ? styles.gridCardActive : ''}`}
-              >
-                <div className={styles.cardBgImage}>
-                  <Image
-                    src={thumbUrl}
-                    alt={`${school.name} 시국선언 영상 썸네일`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    style={{ objectFit: 'cover' }}
-                    unoptimized
-                  />
-
-                  <div className={styles.videoPlayOverlay}>
-                    <div className={styles.playButtonIcon}>
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                        <polygon points="5,3 19,12 5,21" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.cardContent}>
-                  <div className={styles.cardTopInfo}>
-                    <span className={styles.schoolOrgName}>
-                      {school.name}{school.organization ? ` · ${school.organization}` : ''}
-                    </span>
-                    <span className={styles.schoolDate}>{school.date}</span>
-                  </div>
-                  <h2 className={styles.statementTitle}>{school.summary}</h2>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
         {isLoading && (
           <div className={styles.loaderState}>
             데이터를 불러오는 중입니다...
           </div>
         )}
+      </section>
+
+      {/* 5구역: 최신 시국선언 영상 그리드 (독립 밴드) */}
+      <section className={styles.videoSection}>
+        <div className={styles.videoInner}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+            <div>
+              <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.7px', color: 'var(--text)', margin: 0 }}>
+                전국 대학생들의 시국선언
+              </h2>
+              <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '4px 0 0 0' }}>
+                공정한 선거정의를 외치는 대학별 현장 결의 및 선언 영상입니다.
+              </p>
+            </div>
+            <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
+              전체 영상 보기 →
+            </Link>
+          </div>
+
+          <div className={styles.gridContainer}>
+            {latestVideos.map((school: any) => {
+              const ytId = extractYouTubeId(school.youtube_url);
+              const thumbUrl = ytId 
+                ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` 
+                : "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1200";
+
+              return (
+                <article
+                  key={school.id}
+                  onClick={() => setSelectedId(school.id)}
+                  className={`${styles.gridCard} ${selectedId === school.id ? styles.gridCardActive : ''}`}
+                >
+                  <div className={styles.cardBgImage}>
+                    <Image
+                      src={thumbUrl}
+                      alt={`${school.name} 시국선언 영상 썸네일`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      style={{ objectFit: 'cover' }}
+                      unoptimized
+                    />
+
+                    <div className={styles.videoPlayOverlay}>
+                      <div className={styles.playButtonIcon}>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                          <polygon points="5,3 19,12 5,21" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.cardContent}>
+                    <div className={styles.cardTopInfo}>
+                      <span className={styles.schoolOrgName}>
+                        {school.name}{school.organization ? ` · ${school.organization}` : ''}
+                      </span>
+                      <span className={styles.schoolDate}>{school.date}</span>
+                    </div>
+                    <h2 className={styles.statementTitle}>{school.summary}</h2>
+                  </div>
+                </article>
+              );
+            })}
+
+            {!isLoading && latestVideos.length === 0 && (
+              <div className={styles.loaderState} style={{ padding: '40px 0' }}>
+                기록된 시국선언 영상이 없습니다.
+              </div>
+            )}
+          </div>
+        </div>
       </section>
 
       <Footer />

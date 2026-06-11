@@ -1148,5 +1148,15 @@
   text-decoration: none;
 }
 
+.videoSection {
+  background-color: #f9f9fb;
+  padding: 80px 24px;
+}
+
+.videoInner {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
 
 
