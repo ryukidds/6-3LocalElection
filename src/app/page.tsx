@@ -336,15 +336,17 @@ export default function Home() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
             <div>
               <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.7px', color: 'var(--text)', margin: '0px' }}>
-                전국 대학생들의 <br /> 시국선언
+                전국대학생들의<br className={styles.mobileBr} />시국선언
               </h2>
               <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '4px 0 0 0' }}>
                 공정한 선거정의를 외치는 대학별 현장 결의 및 선언 영상입니다.
               </p>
             </div>
-            <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
-              전체 영상 보기 →
-            </Link>
+            {!isMobile && (
+              <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
+                전체 영상 보기 →
+              </Link>
+            )}
           </div>
 
           <div className={styles.gridContainer}>
@@ -398,6 +400,14 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {isMobile && (
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <Link href="/archive" className={styles.mobileMoreLink}>
+                전체 영상 보기 →
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

@@ -38,6 +38,8 @@ function DashboardContent({ initialDeclarations }: Props) {
   const [declarations, setDeclarations] = useState<SchoolDeclaration[]>(initialDeclarations);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,10 +47,24 @@ function DashboardContent({ initialDeclarations }: Props) {
 
   useEffect(() => {
     setIsAdmin(sessionStorage.getItem('admin_auth') === 'true');
-    if (window.innerWidth < 768) {
-      setViewMode('list');
-    }
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setViewMode('list');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [searchTerm, regionFilter, categoryFilter, sortOrder, activeTab]);
 
   // Supabase 데이터 가져오기
   useEffect(() => {
@@ -136,6 +152,13 @@ function DashboardContent({ initialDeclarations }: Props) {
       return [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
   }, [allDeclarationsIncludingStaticVideos, activeTab, searchTerm, regionFilter, categoryFilter, sortOrder]);
+
+  const displayedDeclarations = useMemo(() => {
+    if (isMobile) {
+      return filteredDeclarations.slice(0, visibleCount);
+    }
+    return filteredDeclarations;
+  }, [filteredDeclarations, isMobile, visibleCount]);
 
   const selectedSchool = useMemo(() => {
     return allDeclarationsIncludingStaticVideos.find((dec) => dec.id === selectedId);
@@ -376,7 +399,7 @@ function DashboardContent({ initialDeclarations }: Props) {
         {/* 아카이브 목록 그리드 및 리스트 (Toss Feed 매거진 스타일 & 리스트 모드 지원) */}
         <section className={styles.contentWrapper}>
           <div ref={containerRef} className={viewMode === 'grid' ? styles.gridContainer : styles.listContainer}>
-            {filteredDeclarations.map((school) => {
+            {displayedDeclarations.map((school) => {
               const hasVideo = !!school.youtube_url;
               const ytId = extractYouTubeId(school.youtube_url);
               const thumbUrl = hasVideo && ytId 
@@ -440,6 +463,18 @@ function DashboardContent({ initialDeclarations }: Props) {
               );
             })}
           </div>
+
+          {isMobile && filteredDeclarations.length > visibleCount && (
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <button 
+                onClick={() => setVisibleCount(prev => prev + 10)} 
+                className={styles.mobileMoreLink}
+                style={{ width: '100%', cursor: 'pointer' }}
+              >
+                더보기 ▼
+              </button>
+            </div>
+          )}
 
           {isLoading && (
             <div className={styles.loaderState}>
