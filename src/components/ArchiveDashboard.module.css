@@ -872,12 +872,18 @@
   }
 
   .heroSection {
-    padding: 60px 16px 48px 16px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 80px 16px 80px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .heroTitle {
-    font-size: 28px;
+    font-size: 36px;
     letter-spacing: -0.8px;
+    line-height: 1.25;
   }
 
   .heroSubtitle {
@@ -902,7 +908,8 @@
   }
 
   .statsTitle {
-    font-size: 20px;
+    font-size: 26px;
+    line-height: 1.4;
     margin-bottom: 32px;
   }
 
@@ -935,6 +942,11 @@
     flex-grow: unset;
     text-align: center;
     padding: 8px 0;
+    font-size: 20px;
+  }
+
+  .tabBtnActive {
+    font-size: 20px;
   }
 
   .filterGroup {
@@ -1156,6 +1168,87 @@
 .videoInner {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.mobileBr {
+  display: none;
+}
+
+.searchWrapperRow {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+}
+
+.filterToggleBtn {
+  display: none;
+}
+
+.selectGroup {
+  display: flex;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+@media (max-width: 767px) {
+  .mobileBr {
+    display: block;
+  }
+
+  .mobileMoreLink {
+    display: inline-block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+    padding: 14px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background-color: #ffffff;
+    width: 100%;
+    box-sizing: border-box;
+    transition: var(--transition);
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobileMoreLink:hover {
+    background-color: #f2f2f7;
+    border-color: #d1d1d6;
+  }
+
+  .filterToggleBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f2f2f7;
+    color: var(--text);
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    height: 48px;
+    white-space: nowrap;
+    transition: var(--transition);
+  }
+
+  .filterToggleBtn:hover {
+    background-color: #e5e5ea;
+  }
+
+  .selectGroup {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .selectGroupExpanded {
+    display: flex;
+  }
 }
 
 

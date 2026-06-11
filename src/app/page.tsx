@@ -26,9 +26,19 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const detailRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     setIsAdmin(sessionStorage.getItem('admin_auth') === 'true');
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -140,7 +150,7 @@ export default function Home() {
       <section className={styles.statsSection}>
         <div className={styles.statsInner}>
           <h2 className={styles.statsTitle}>
-            전국 <span className={styles.statsNumber}>{stats.universities}</span>개 대학에서 <span className={styles.statsNumber}>{stats.declarations}</span>건의 성명이 외쳤습니다.
+            전국 <span className={styles.statsNumber}>{stats.universities}</span>개 대학에서 <br className={styles.mobileBr} /> <span className={styles.statsNumber}>{stats.declarations}</span>건의 성명이 외쳤습니다.
           </h2>
         </div>
       </section>
@@ -232,20 +242,42 @@ export default function Home() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
             <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.7px', color: 'var(--text)', margin: 0 }}>
-              부정한 선거에 대한 청년들의 목소리를 기록하다.
+              부정한 선거에 대한<br className={styles.mobileBr} />청년들의 목소리를 기록하다.
             </h2>
             <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '4px 0 0 0' }}>
               전국 대학생들의 최신 시국성명서와 대자보를 확인하세요.
             </p>
           </div>
-          <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
-            전체 목록 보기 →
-          </Link>
+          {!isMobile && (
+            <Link href="/archive" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
+              전체 목록 보기 →
+            </Link>
+          )}
         </div>
 
-        <div className={styles.gridContainer}>
+        <div className={isMobile ? styles.listContainer : styles.gridContainer}>
           {latestStatements.map((school: any) => {
             const thumbUrl = getImageUrl(school);
+
+            if (isMobile) {
+              return (
+                <article
+                  key={school.id}
+                  onClick={() => setSelectedId(school.id)}
+                  className={`${styles.listCard} ${selectedId === school.id ? styles.gridCardActive : ''}`}
+                >
+                  <div className={styles.listCardContent}>
+                    <div className={styles.listCardLeft}>
+                      <span className={styles.schoolOrgName}>
+                        {school.name}{school.organization ? ` · ${school.organization}` : ''}
+                      </span>
+                      <h2 className={styles.statementTitleList}>{school.summary}</h2>
+                    </div>
+                    <span className={styles.schoolDate}>{school.date}</span>
+                  </div>
+                </article>
+              );
+            }
 
             return (
               <article
@@ -282,6 +314,14 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {isMobile && (
+          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+            <Link href="/archive" className={styles.mobileMoreLink}>
+              전체 목록 보기 →
+            </Link>
+          </div>
+        )}
 
         {isLoading && (
           <div className={styles.loaderState}>

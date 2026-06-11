@@ -33,6 +33,7 @@ function DashboardContent({ initialDeclarations }: Props) {
   const [activeTab, setActiveTab] = useState<'statement' | 'video'>('statement');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
   const [declarations, setDeclarations] = useState<SchoolDeclaration[]>(initialDeclarations);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +45,9 @@ function DashboardContent({ initialDeclarations }: Props) {
 
   useEffect(() => {
     setIsAdmin(sessionStorage.getItem('admin_auth') === 'true');
+    if (window.innerWidth < 768) {
+      setViewMode('list');
+    }
   }, []);
 
   // Supabase 데이터 가져오기
@@ -203,39 +207,52 @@ function DashboardContent({ initialDeclarations }: Props) {
 
             {/* 다중 드롭다운 필터 */}
             <div className={styles.filterGroup}>
-              <div className={styles.searchWrapper}>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="학교, 조직, 제목 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={styles.searchInput}
-                />
+              <div className={styles.searchWrapperRow}>
+                <div className={styles.searchWrapper}>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="학교, 조직, 제목 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.searchInput}
+                  />
+                </div>
+                {/* 모바일 상세 필터 접기/열기 버튼 */}
+                <button
+                  type="button"
+                  className={styles.filterToggleBtn}
+                  onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+                >
+                  필터 {isFiltersExpanded ? '접기 ▲' : '열기 ▼'}
+                </button>
               </div>
-              <select className={styles.filterSelect} value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
-                <option value="전체">전체 지역</option>
-                <option value="서울">서울</option>
-                <option value="경기">경기</option>
-                <option value="인천">인천</option>
-                <option value="대전">대전</option>
-                <option value="대구">대구</option>
-                <option value="부산">부산</option>
-                <option value="광주">광주</option>
-                <option value="울산">울산</option>
-                <option value="강원">강원</option>
-              </select>
-              <select className={styles.filterSelect} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-                <option value="전체">전체 분류</option>
-                <option value="총학생회">총학생회</option>
-                <option value="단과대">단과대</option>
-                <option value="동아리">동아리</option>
-                <option value="기타">기타</option>
-              </select>
-              <select className={styles.filterSelect} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                <option value="최신 등록순">최신 등록순</option>
-                <option value="오래된 순">오래된 순</option>
-              </select>
+
+              <div className={`${styles.selectGroup} ${isFiltersExpanded ? styles.selectGroupExpanded : ''}`}>
+                <select className={styles.filterSelect} value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
+                  <option value="전체">전체 지역</option>
+                  <option value="서울">서울</option>
+                  <option value="경기">경기</option>
+                  <option value="인천">인천</option>
+                  <option value="대전">대전</option>
+                  <option value="대구">대구</option>
+                  <option value="부산">부산</option>
+                  <option value="광주">광주</option>
+                  <option value="울산">울산</option>
+                  <option value="강원">강원</option>
+                </select>
+                <select className={styles.filterSelect} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                  <option value="전체">전체 분류</option>
+                  <option value="총학생회">총학생회</option>
+                  <option value="단과대">단과대</option>
+                  <option value="동아리">동아리</option>
+                  <option value="기타">기타</option>
+                </select>
+                <select className={styles.filterSelect} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                  <option value="최신 등록순">최신 등록순</option>
+                  <option value="오래된 순">오래된 순</option>
+                </select>
+              </div>
             </div>
 
             {/* 뷰 모드 토글러 복원 */}
