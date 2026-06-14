@@ -942,11 +942,11 @@
     flex-grow: unset;
     text-align: center;
     padding: 8px 0;
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .tabBtnActive {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .filterGroup {

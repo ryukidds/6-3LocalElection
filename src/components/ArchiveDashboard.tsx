@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import gsap from 'gsap';
-import { SchoolDeclaration, getImageUrl, staticVideos } from '@/data/schools';
+import { SchoolDeclaration, getImageUrl, getAllImageUrls, staticVideos } from '@/data/schools';
 import { supabase } from '@/lib/supabaseClient';
 import styles from './ArchiveDashboard.module.css';
 import PosterImageViewer from './PosterImageViewer';
@@ -73,13 +73,22 @@ function DashboardContent({ initialDeclarations }: Props) {
         const { data, error } = await supabase
           .from('declarations')
           .select('*')
-          .eq('status', 'approved');
+          .eq('status', 'approved')
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false });
         
         if (error) {
           console.error('Error fetching declarations:', error);
         } else if (data) {
           // Sort chronologically (oldest first) to assign sequence numbers
-          const sortedChronologically = [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const sortedChronologically = [...data].sort((a, b) => {
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+            if (dateA !== dateB) return dateA - dateB;
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return timeA - timeB;
+          });
           
           const mappedData = data.map((item: any) => {
             const seqIndex = sortedChronologically.findIndex(x => x.id === item.id);
@@ -147,9 +156,23 @@ function DashboardContent({ initialDeclarations }: Props) {
     });
 
     if (sortOrder === '오래된 순') {
-      return [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      return [...filtered].sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeA - timeB;
+      });
     } else {
-      return [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return [...filtered].sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeB - timeA;
+      });
     }
   }, [allDeclarationsIncludingStaticVideos, activeTab, searchTerm, regionFilter, categoryFilter, sortOrder]);
 
@@ -254,15 +277,23 @@ function DashboardContent({ initialDeclarations }: Props) {
               <div className={`${styles.selectGroup} ${isFiltersExpanded ? styles.selectGroupExpanded : ''}`}>
                 <select className={styles.filterSelect} value={regionFilter} onChange={(e) => setRegionFilter(e.target.value)}>
                   <option value="전체">전체 지역</option>
-                  <option value="서울">서울</option>
-                  <option value="경기">경기</option>
-                  <option value="인천">인천</option>
-                  <option value="대전">대전</option>
-                  <option value="대구">대구</option>
-                  <option value="부산">부산</option>
-                  <option value="광주">광주</option>
-                  <option value="울산">울산</option>
-                  <option value="강원">강원</option>
+                  <option value="강원도">강원도</option>
+                  <option value="경기도">경기도</option>
+                  <option value="경상남도">경상남도</option>
+                  <option value="경상북도">경상북도</option>
+                  <option value="광주광역시">광주광역시</option>
+                  <option value="대구광역시">대구광역시</option>
+                  <option value="대전광역시">대전광역시</option>
+                  <option value="부산광역시">부산광역시</option>
+                  <option value="서울특별시">서울특별시</option>
+                  <option value="세종특별자치시">세종특별자치시</option>
+                  <option value="울산광역시">울산광역시</option>
+                  <option value="인천광역시">인천광역시</option>
+                  <option value="전라남도">전라남도</option>
+                  <option value="전라북도">전라북도</option>
+                  <option value="제주특별자치도">제주특별자치도</option>
+                  <option value="충청남도">충청남도</option>
+                  <option value="충청북도">충청북도</option>
                 </select>
                 <select className={styles.filterSelect} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                   <option value="전체">전체 분류</option>
@@ -334,7 +365,7 @@ function DashboardContent({ initialDeclarations }: Props) {
               ) : (
                 // 성명서 다중 이미지 뷰어
                 <PosterImageViewer
-                  src={getImageUrl(selectedSchool)}
+                  src={getAllImageUrls(selectedSchool)}
                   alt={`${selectedSchool.name} 시국성명서`}
                   title={selectedSchool.summary}
                 />

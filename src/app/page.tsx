@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabaseClient';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PosterImageViewer from '@/components/PosterImageViewer';
-import { getImageUrl, SchoolDeclaration, staticVideos } from '@/data/schools';
+import { getImageUrl, getAllImageUrls, SchoolDeclaration, staticVideos } from '@/data/schools';
 import styles from '@/components/ArchiveDashboard.module.css';
 
 function extractYouTubeId(url: string | undefined): string | null {
@@ -44,11 +44,13 @@ export default function Home() {
   useEffect(() => {
     const fetchStatsAndDeclarations = async () => {
       try {
-        // Fetch all approved declarations
+        // Fetch all approved declarations ordered by date and creation time
         const { data, error } = await supabase
           .from('declarations')
           .select('*')
-          .eq('status', 'approved');
+          .eq('status', 'approved')
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false });
 
         if (error) {
           console.error('Error fetching statistics:', error);
@@ -60,9 +62,14 @@ export default function Home() {
           });
 
           // Sort chronologically (oldest first) to assign sequence numbers
-          const sortedChronologically = [...data].sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
+          const sortedChronologically = [...data].sort((a, b) => {
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+            if (dateA !== dateB) return dateA - dateB;
+            const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return timeA - timeB;
+          });
 
           const mappedData = data.map((item: any) => {
             const seqIndex = sortedChronologically.findIndex(x => x.id === item.id);
@@ -90,7 +97,14 @@ export default function Home() {
   const latestStatements = useMemo(() => {
     return declarations
       .filter((d) => !d.youtube_url)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeB - timeA;
+      })
       .slice(0, 6);
   }, [declarations]);
 
@@ -100,7 +114,14 @@ export default function Home() {
     const dbIds = new Set(dbVideos.map(d => d.id));
     const uniqueStatic = staticVideos.filter(v => !dbIds.has(v.id));
     return [...dbVideos, ...uniqueStatic]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return timeB - timeA;
+      })
       .slice(0, 6);
   }, [declarations]);
 
@@ -178,7 +199,7 @@ export default function Home() {
                 </div>
               ) : (
                 <PosterImageViewer
-                  src={getImageUrl(selectedSchool)}
+                  src={getAllImageUrls(selectedSchool)}
                   alt={`${selectedSchool.name} 시국성명서`}
                   title={selectedSchool.summary}
                 />
