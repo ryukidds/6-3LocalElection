@@ -158,10 +158,10 @@ export default function Home() {
           </p>
           <div className={styles.heroActions}>
             <Link href="/archive" className={styles.heroPrimaryBtn}>
-              아카이브 목록 보기
+              목록보기
             </Link>
             <Link href="/submit" className={styles.heroSecondaryBtn}>
-              시국기록 제보하기
+              제보하기
             </Link>
           </div>
         </div>
@@ -357,7 +357,7 @@ export default function Home() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
             <div>
               <h2 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.7px', color: 'var(--text)', margin: '0px' }}>
-                전국대학생들의<br className={styles.mobileBr} />시국선언
+                전국 대학생들의 <br className={styles.mobileBr} />시국선언
               </h2>
               <p style={{ fontSize: '14px', color: 'var(--muted)', margin: '4px 0 0 0' }}>
                 공정한 선거정의를 외치는 대학별 현장 결의 및 선언 영상입니다.
